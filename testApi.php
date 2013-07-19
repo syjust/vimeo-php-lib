@@ -178,6 +178,8 @@ class TestApi {
 	}
 }
 
-TestApi::main($argv);
+if (sizeof($argv) > 1) {
+	TestApi::main($argv);
+}
 
 ?>
