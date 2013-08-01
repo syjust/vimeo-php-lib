@@ -2,7 +2,7 @@
 require_once('vimeo.php');
 require_once('constants.php');
 
-class TestApi {
+class VimeoApi {
 
 	private $vimeo = "";
 	public $appName = "testVimeoApi";
@@ -29,7 +29,7 @@ class TestApi {
 			echo "$mess\n";
 		}
 		echo "\n";
-		echo "USAGE : php TestApi options\n";
+		echo "USAGE : php VimeoApi options\n";
 		echo "where options are :\n";
 		echo "\t--list\t\tprint the list of current videos uploaded\n";
 		echo "\t--check\t\tcheck the current user quota\n";
@@ -128,7 +128,7 @@ class TestApi {
 	 * ----------------------------------------
 	 */
 	function main($args) {
-		$api = new TestApi();
+		$api = new VimeoApi();
 		$app = array_shift($args);
 		if ($app) {
 			$api->appName = $app;
@@ -179,7 +179,7 @@ class TestApi {
 }
 
 if (sizeof($argv) > 1) {
-	TestApi::main($argv);
+	VimeoApi::main($argv);
 }
 
 ?>
