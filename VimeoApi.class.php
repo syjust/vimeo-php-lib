@@ -65,11 +65,14 @@ class VimeoApi {
 		echo "Encountered an API error -- code {$e->getCode()} - {$e->getMessage()}\n";
 	}
 
+	function setTitle($video_id, $fileName) {
+		$this->vimeo->call('vimeo.videos.setTitle', array('title' => $fileName, 'video_id' => $video_id));
+	}
 	function uploadVimeo($videoFile) {
 		$video_id = "";
 		$video_id = $this->vimeo->upload($videoFile);
 		if ($video_id) {
-			$this->vimeo->call('vimeo.videos.setTitle', array('title' => basename($videoFile), 'video_id' => $video_id));
+			$this->setTitle($video_id, basename($videoFile));
 			//$this->vimeo->call('vimeo.videos.setDescription', array('description' => 'YOUR_DESCRIPTION', 'video_id' => $video_id));
 		} else {
 			$this->help('no video_id, setTitle or upload failed');
