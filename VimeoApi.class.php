@@ -34,6 +34,7 @@ class VimeoApi {
 		echo "\t--list\t\tprint the list of current videos uploaded\n";
 		echo "\t--check\t\tcheck the current user quota\n";
 		echo "\t--upload 'filename'\tupload the file given as 'filename'\n";
+		echo "\t--delete 'id'\tdelete video with id 'id'\n";
 		echo "\t--info\t\tcheck all info of all videos\n";
 		echo "\tthats all for moment\n";
 		echo "\n";
@@ -49,22 +50,14 @@ class VimeoApi {
 		return $this->vimeo->call('vimeo.videos.getAll', array('user_id' => VimeoConstants::USER_ID));
 	}
 	function printList() {
-		try {
-			$videos = $this->getList();
-			echo print_r($videos, true);
-		} catch (VimeoAPIException $e) {
-			$this->apiError($e);
-		}
+		$videos = $this->getList();
+		echo print_r($videos, true);
 	}
 
 	function checkQuota() {
 		$quota = "";
-		try {
-			$quota = $this->vimeo->call('vimeo.videos.upload.getQuota', array('user_id' => VimeoConstants::USER_ID));
-			echo print_r($quota, true);
-		} catch (VimeoAPIException $e) {
-			$this->apiError($e);
-		}
+		$quota = $this->vimeo->call('vimeo.videos.upload.getQuota', array('user_id' => VimeoConstants::USER_ID));
+		echo print_r($quota, true);
 		return $quota;
 	}
 
@@ -72,28 +65,18 @@ class VimeoApi {
 		echo "Encountered an API error -- code {$e->getCode()} - {$e->getMessage()}\n";
 	}
 
-	function getTicket() {
-		$ticket = "";
-		try {
-			$ticket = $this->vimeo->call('vimeo.videos.upload.getTicket', array('user_id' => VimeoConstants::USER_ID));
-		} catch (VimeoAPIException $e) {
-			$this->apiError($e);;
+	function uploadVimeo($videoFile) {
+		$video_id = "";
+		$video_id = $this->vimeo->upload($videoFile);
+		if ($video_id) {
+			$this->vimeo->call('vimeo.videos.setTitle', array('title' => basename($videoFile), 'video_id' => $video_id));
+			//$this->vimeo->call('vimeo.videos.setDescription', array('description' => 'YOUR_DESCRIPTION', 'video_id' => $video_id));
+		} else {
+			$this->help('no video_id, setTitle or upload failed');
 		}
 	}
-
-	function upload($videoFile) {
-		try {
-			$quota = $this->checkQuota();
-			$video_id = $this->vimeo->upload($videoFile);
-			if ($video_id) {
-				$this->vimeo->call('vimeo.videos.setTitle', array('title' => basename($videoFile), 'video_id' => $video_id));
-				//$this->vimeo->call('vimeo.videos.setDescription', array('description' => 'YOUR_DESCRIPTION', 'video_id' => $video_id));
-			} else {
-				$this->help('no video_id, upload failed');
-			}
-		} catch (VimeoAPIException $e) {
-			$this->apiError($e);
-		}
+	function deleteVimeo($id) {
+		$this->vimeo->call('vimeo.videos.delete', array('video_id' => $id));
 	}
 
 	function getInfo($id) {
@@ -136,37 +119,56 @@ class VimeoApi {
 		if ($args) {
 			if (sizeof($args) >= 1) {
 				while (sizeof($args) > 0) {
-					$string = array_shift($args);
-					echo "arg : $string\n";
-					switch($string) {
-						case '--list' : $api->printList(); break;
-						case '--check' : $api->checkQuota(); break;
-						case '--info' : $videoInfo = array();
-							if (sizeof($args) >= 1) {
-								$tmpArg = array_shift($args);
-								if (preg_match('/^[0-9]{8}$/', $tmpArg)) {
-									$videoInfo['id'] = $tmpArg;
-								} else if (preg_match('/^--.*/', $tmpArg)) {
-									array_pop($args, $tmpArg);
-								} else {
-									$videoInfo['title'] = $tmpArg;
+					try {
+						$string = array_shift($args);
+						echo "arg : $string\n";
+						switch($string) {
+							case '--list' : $api->printList(); break;
+							case '--check' : $api->checkQuota(); break;
+							case '--info' : $videoInfo = array();
+								if (sizeof($args) >= 1) {
+									$tmpArg = array_shift($args);
+									if (preg_match('/^[0-9]{8}$/', $tmpArg)) {
+										$videoInfo['id'] = $tmpArg;
+									} else if (preg_match('/^--.*/', $tmpArg)) {
+										array_pop($args, $tmpArg);
+									} else {
+										$videoInfo['title'] = $tmpArg;
+									}
 								}
-							}
-							$api->printInfo($videoInfo);
-							break;
-						case '--upload' :
-							if (sizeof($args) >= 1) {
-								$file = array_shift($args);
-								if (is_file($file)) {
-									$api->upload($file);
+								$api->printInfo($videoInfo);
+								break;
+							case '--delete' :
+								if (sizeof($args) >= 1) {
+									$id = array_shift($args);
+									# TODO : implement deleteVimeo function
+									# TODO : change other CRUD functionsm with vimeo suffix
+									if (preg_match("/^[0-9]{8}$/", $id)) {
+										$api->deleteVimeo($id);
+									} else {
+										$api->help("--delete need a valid 'id' as argument, '$id' is not one");
+									}
 								} else {
-									$api->help("$file is not a valid 'filename'");
+									$api->help("--delete need a valid 'id' as argument");
 								}
-							} else {
-								$api->help("--upload need a valid 'filename' as argument");
-							}
-							break;
-						default : $api->help("$string : unrocognized option");
+								break;
+							case '--upload' :
+								if (sizeof($args) >= 1) {
+									$file = array_shift($args);
+									if (is_file($file)) {
+										$api->uploadVimeo($file);
+									} else {
+										$api->help("$file is not a valid 'filename'");
+									}
+								} else {
+									$api->help("--upload need a valid 'filename' as argument");
+								}
+								break;
+							default : $api->help("$string : unrocognized option");
+						}
+					} catch (Exception $e) {
+						#VimeoAPIException 
+						$this->apiError($e);
 					}
 				}
 			} else {
