@@ -7,7 +7,7 @@ session_start();
 #$vimeo = new phpVimeo(CONSUMER_KEY, CONSUMER_SECRET);
 $debug = "";
 
-$vimeo = new phpVimeo(VimeoConstants::ACCESS_TOKEN, VimeoConstants::ACCESS_TOKEN_SECRET);
+$vimeo = new phpVimeo(VimeoConstants::CONSUMER_KEY, VimeoConstants::CONSUMER_SECRET);
 $vimeo->enableCache(phpVimeo::CACHE_FILE, './cache', 300);
 
 // Clear session
